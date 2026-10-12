@@ -82,7 +82,16 @@ class YieldCurve(Model):
             # - If a reference exists, call this helper recursively.
             # - Otherwise, use 1.0 as the reference discount factor.
             # - Combine it with this component's own discount factor.
-            raise NotImplementedError("Implement recursive discount-factor calculation.")
+            local_discount_factor = this_component.discount_factor(expiry_date)
+
+            if reference_index is None:
+                reference_discount_factor = 1.0
+            else:
+                reference_discount_factor = discount_factor_with_reference(
+                    reference_index
+                )
+
+            return local_discount_factor * reference_discount_factor
 
         return discount_factor_with_reference(index)
 
@@ -150,7 +159,10 @@ class YieldCurveModelComponent(ModelComponent):
         # TODO: Calculate this component's discount factor.
         # Hint: Use self.state_data_interpolator.integrate(a, b)
         # and D(t) = exp(-integral_0^t f(s) ds).
-        raise NotImplementedError("TODO: implement component discount_factor")
+        integrated_ifr = self.state_data_interpolator.integrate(
+            0.0, time_to_expiry
+        )
+        return float(np.exp(-integrated_ifr))
 
 
 ModelDeserializerRegistry().register(YieldCurve._model_type.to_string(), YieldCurve.deserialize)
